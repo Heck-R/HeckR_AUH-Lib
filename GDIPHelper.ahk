@@ -23,6 +23,10 @@ JustTheBasics() {
 GDIP_SetUp(iWidth=-1, iHeight=-1, iPosX=0, iPosY=0) {
 	global
 
+	; Flag for indicating when we are drawing (only applicable in this Helper)
+	GDIP_IsDrawing := false
+
+	; Setting up position and size
 	if( iWidth<0 || iHeight<0 ){
 
 		SysGet, monitorNum, MonitorCount
@@ -75,38 +79,50 @@ GDIP_SetUp(iWidth=-1, iHeight=-1, iPosX=0, iPosY=0) {
 GDIP_StartDraw() {
 	global
 	
-	; Create a gdi bitmap with width and height of what we are going to draw into it. This is the entire drawing area for everything
-	hbm := CreateDIBSection(width, height)
+	; Only start to draw if we are not already drawing
+	if(!GDIP_IsDrawing){
+		; Create a gdi bitmap with width and height of what we are going to draw into it. This is the entire drawing area for everything
+		hbm := CreateDIBSection(width, height)
 
-	; Get a device context compatible with the screen
-	hdc := CreateCompatibleDC()
+		; Get a device context compatible with the screen
+		hdc := CreateCompatibleDC()
 
-	; Select the bitmap into the device context
-	obm := SelectObject(hdc, hbm)
+		; Select the bitmap into the device context
+		obm := SelectObject(hdc, hbm)
 
-	; Get a pointer to the graphics of the bitmap, for use with drawing functions
-	G := Gdip_GraphicsFromHDC(hdc)	
+		; Get a pointer to the graphics of the bitmap, for use with drawing functions
+		G := Gdip_GraphicsFromHDC(hdc)
+		
+		; Indicate that we are drawing
+		GDIP_IsDrawing := true
+	}
 }
 
 GDIP_EndDraw() {
 	global
 	
-	; Update the specified window we have created (hwnd1) with a handle to our bitmap (hdc), specifying the x,y,w,h we want it positioned on our screen
-	; So this will position our gui at (posX,posY) with the Width and Height specified earlier
-	UpdateLayeredWindow(hwnd1, hdc, posX, posY, width, height)
+	; Only end the draw if we are drawing
+	if(GDIP_IsDrawing){
+		; Update the specified window we have created (hwnd1) with a handle to our bitmap (hdc), specifying the x,y,w,h we want it positioned on our screen
+		; So this will position our gui at (posX,posY) with the Width and Height specified earlier
+		UpdateLayeredWindow(hwnd1, hdc, posX, posY, width, height)
 
 
-	; Select the object back into the hdc
-	SelectObject(hdc, obm)
+		; Select the object back into the hdc
+		SelectObject(hdc, obm)
 
-	; Now the bitmap may be deleted
-	DeleteObject(hbm)
+		; Now the bitmap may be deleted
+		DeleteObject(hbm)
 
-	; Also the device context related to the bitmap may be deleted
-	DeleteDC(hdc)
+		; Also the device context related to the bitmap may be deleted
+		DeleteDC(hdc)
 
-	; The graphics may now be deleted
-	Gdip_DeleteGraphics(G)
+		; The graphics may now be deleted
+		Gdip_DeleteGraphics(G)
+		
+		; Indicate that we are drawing
+		GDIP_IsDrawing := false
+	}
 }
 
 GDIP_Clean() {
