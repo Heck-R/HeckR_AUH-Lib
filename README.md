@@ -6,6 +6,12 @@ Note, that I did not create most of these scripts, and I did modify a few of the
 
 ## Content
 
+### AutoXYWH.ahk
+
+Author: (original) [Lintalist](https://github.com/lintalist), (contributor) [toralf](https://github.com/Toralf-AHK)
+
+Source: [AutoHotkey topic](https://www.autohotkey.com/boards/viewtopic.php?f=6&t=1079)
+
 ### Command.ahk
 
 Author: [AutoHotkey](www.autohotkey.com)
