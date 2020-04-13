@@ -8,7 +8,7 @@ Note, that I did not create most of these scripts, and I did modify a few of the
 
 ### AutoXYWH.ahk
 
-Author: (original) [Lintalist](https://github.com/lintalist), (contributor) [toralf](https://github.com/Toralf-AHK)
+Author: (original) [Lintalist](https://github.com/lintalist), (contributor) [Toralf](https://github.com/Toralf-AHK)
 
 Source: [AutoHotkey topic](https://www.autohotkey.com/boards/viewtopic.php?f=6&t=1079)
 
