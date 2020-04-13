@@ -133,3 +133,15 @@ GDIP_Update(){
 	global
 	UpdateLayeredWindow(GDIP_hwnd, GDIP_DeviceContextHandle, GDIP_posX, GDIP_posY, GDIP_width, GDIP_height)
 }
+
+; The axis should be "x" or "y"
+GDIP_DesktopPos(screenPos, axis){
+	global
+	
+	if(axis == "x")
+		return -GDIP_TopLeftPoint.x + screenPos
+	if(axis == "y")
+		return -GDIP_TopLeftPoint.y + screenPos
+	
+	Throw "Wrong axis value. It should be either 'x' or 'y', but it is: '" . axis . "'"
+}
