@@ -34,17 +34,15 @@ GDIP_SetUp(iWidth=-1, iHeight=-1, iPosX=0, iPosY=0) {
 		leftMostPoint = 0
 		topMostPoint = 0
 
-		SysGet, topLeftMonitor, MonitorPrimary
-
 		Loop, %monitorNum%
 		{
 			SysGet, monitorBorderPos, Monitor, %A_Index%
-			if( (monitorBorderPosLeft <= leftMostPoint) && (monitorBorderPosTop <= topMostPoint) )
-			{
+			
+			if(monitorBorderPosLeft <= leftMostPoint)
 				leftMostPoint=%monitorBorderPosLeft%
+			
+			if(monitorBorderPosTop <= topMostPoint)
 				topMostPoint=%monitorBorderPosTop%
-				topLeftMonitor=%A_Index%
-			}
 		}
 		
 		SysGet, fullWidth, 78
