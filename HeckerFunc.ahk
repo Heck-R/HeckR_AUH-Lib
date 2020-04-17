@@ -16,7 +16,7 @@ getCombinations(elements, subSetSize = -1, joinConbinationsWith = false) {
 
     ; No elements or zero set, no work
     if(elements.MaxIndex() == "" || subSetSize == 0)
-        return ""
+        return [""]
 
     combinations := []
 
