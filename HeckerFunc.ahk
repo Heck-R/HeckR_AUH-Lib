@@ -31,7 +31,7 @@ splitEscapedString(string, delimChar := "`n", escChar := "``") {
     splittedStrings := []
 
     escaping := false
-    Loop, Parse, string
+    loop, Parse, string
     {
         ; Skip character if it is being escaped
         if (escaping == true){
@@ -106,7 +106,7 @@ unescapeString(string, escChar := "``") {
 getCombinations(elements, subSetSize = -1, joinConbinationsWith = false) {
 
     if(subSetSize > elements.MaxIndex())
-        Throw "A subset cannot contain more elements that the set itself`nSet element number: " . elements.MaxIndex() . "`nSubset element number: " . subSetSize
+        throw "A subset cannot contain more elements that the set itself`nSet element number: " . elements.MaxIndex() . "`nSubset element number: " . subSetSize
 
     ; No elements or zero set, no work
     if(elements.MaxIndex() == "" || subSetSize == 0)
