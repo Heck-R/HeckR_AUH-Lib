@@ -1,14 +1,23 @@
 ﻿
+; Join any number of strings with some separator (eg.: join(":", "string1", "string2") will return "string1:string2")
 join(sep, params*) {
     for index,param in params
         str .= sep . param
     return SubStr(str, StrLen(sep)+1)
 }
 
+; Joins the given strings with backslashes
 pathify(params*) {
 	return join("\", params*)
 }
 
+; Creates the combinations of an array of elements
+; 
+; Example: getCombinations([1,2]) should return [[], [1], [2], [1,2]]
+; 
+; PARAMETER elements - An array containing the set of elements which shall be combined
+; PARAMETER subSetSize (default: -1) - Size of the subset of the combinations. If smaller than 0, all possible length of combinations will be created
+; PARAMETER joinConbinationsWith (default: false) - If a string is provided instead of the default false, the individual combinations will be concatenated into strings instead of being arrays, and this parameter's value will be the separator in the string
 getCombinations(elements, subSetSize = -1, joinConbinationsWith = false) {
 
     if(subSetSize > elements.MaxIndex())
