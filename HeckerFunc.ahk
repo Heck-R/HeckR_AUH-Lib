@@ -17,6 +17,14 @@ isFile(path) {
     return (attributes && !InStr(attributes, "D"))
 }
 
+hasValue(containingObject, valueToSearchFor) {
+    for key, value in containingObject
+        if (value == valueToSearchFor)
+            return true
+
+    return false
+}
+
 ; Split the given string with the provided delimiter character unless it is escaped by the provided escape character
 splitEscapedString(string, delimChar := "`n", escChar := "``") {
     lastSeparator := 0
