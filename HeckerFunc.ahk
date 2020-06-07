@@ -11,6 +11,12 @@ pathify(params*) {
 	return join("\", params*)
 }
 
+; Tells wether the given path points to a file
+isFile(path) {
+    attributes := fileExist(path)
+    return (attributes && !InStr(attributes, "D"))
+}
+
 ; Creates the combinations of an array of elements
 ; 
 ; Example: getCombinations([1,2]) should return [[], [1], [2], [1,2]]
