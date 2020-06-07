@@ -11,7 +11,7 @@ pathify(params*) {
 	return join("\", params*)
 }
 
-; Tells wether the given path points to a file
+; Tells whether the given path points to a file
 isFile(path) {
     attributes := fileExist(path)
     return (attributes && !InStr(attributes, "D"))
