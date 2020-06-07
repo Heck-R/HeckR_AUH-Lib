@@ -19,13 +19,13 @@ isFile(path) {
 
 ; Tells whether an object contains a specified value (or values)
 hasValue(containingObject, valueToSearchFor) {
-    valuesToSearchFor := valueToSearchFor
+    valueToSearchForObject := valueToSearchFor
     
-    if (!isObject(valuesToSearchFor))
-        valuesToSearchFor := [valuesToSearchFor]
+    if (!isObject(valueToSearchForObject))
+        valueToSearchForObject := [valueToSearchForObject]
     
     for containedKey, containedValue in containingObject
-        for searchedKey, searchedValue in valueToSearchFor
+        for searchedKey, searchedValue in valueToSearchForObject
             if (containedValue == searchedValue)
                 return true
 
