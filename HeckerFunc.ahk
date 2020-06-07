@@ -17,10 +17,17 @@ isFile(path) {
     return (attributes && !InStr(attributes, "D"))
 }
 
+; Tells whether an object contains a specified value (or values)
 hasValue(containingObject, valueToSearchFor) {
-    for key, value in containingObject
-        if (value == valueToSearchFor)
-            return true
+    valuesToSearchFor := valueToSearchFor
+    
+    if (!isObject(valuesToSearchFor))
+        valuesToSearchFor := [valuesToSearchFor]
+    
+    for containedKey, containedValue in containingObject
+        for searchedKey, searchedValue in valueToSearchFor
+            if (containedValue == searchedValue)
+                return true
 
     return false
 }
