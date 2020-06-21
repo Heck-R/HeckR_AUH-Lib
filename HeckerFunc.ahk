@@ -50,6 +50,31 @@ objectAssign(targetObj, sourceObj) {
     }
 }
 
+; Creates the string representation of an object.
+objectToString(obj, indentSize := 4, indentLevel := 0) {
+    baseIndentSize := indentLevel * indentSize
+
+    ; Primitive value
+    if (!isObject(obj))
+        return """" . obj . """" . "`n"
+
+
+    ; Object
+    fullIndentSize := baseIndentSize + indentSize
+
+    ; Opening brace
+    resultString := "{`n"
+    ; Key-value pairs
+    for key, value in obj {
+        resultString .= Format( "{:" . fullIndentSize .  "}", "" ) . """" . key . """" . ": "
+        resultString .= objectToString(value, indentSize, indentLevel + 1)
+    }
+    ; Closing brace
+    resultString .= Format( "{:" . baseIndentSize .  "}", "" ) . "}`n"
+
+    return resultString
+}
+
 ; Split the given string with the provided delimiter character unless it is escaped by the provided escape character
 splitEscapedString(string, delimChar := "`n", escChar := "``") {
     lastSeparator := 0
