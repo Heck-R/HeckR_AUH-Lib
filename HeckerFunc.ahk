@@ -43,7 +43,7 @@ objectAssign(targetObj, sourceObj) {
         if (isObject(sourceObj[key])) {
             if (!isObject(targetObj[key]))
                 targetObj[key] := {}
-            objectAssign(sourceObj[key], targetObj[key])
+            objectAssign(targetObj[key], sourceObj[key])
         } else {
             targetObj[key] := sourceObj[key]
         }
