@@ -32,6 +32,24 @@ hasValue(containingObject, valueToSearchFor) {
     return false
 }
 
+; Copies the source's content to the target (deep copy).
+objectAssign(targetObj, sourceObj) {
+    if (!isObject(sourceObj))
+        throw "The source should be an object, but it is not"
+    if (!isObject(targetObj))
+        throw "The target should be an object, but it is not"
+    
+    for key, value in sourceObj {
+        if (isObject(sourceObj[key])) {
+            if (!isObject(targetObj[key]))
+                targetObj[key] := {}
+            objectAssign(sourceObj[key], targetObj[key])
+        } else {
+            targetObj[key] := sourceObj[key]
+        }
+    }
+}
+
 ; Split the given string with the provided delimiter character unless it is escaped by the provided escape character
 splitEscapedString(string, delimChar := "`n", escChar := "``") {
     lastSeparator := 0
