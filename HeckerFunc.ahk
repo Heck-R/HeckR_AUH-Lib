@@ -17,6 +17,29 @@ isFile(path) {
     return (attributes && !InStr(attributes, "D"))
 }
 
+getClipFormatIDs() {
+    openReturnCode := DllCall("OpenClipboard", "Ptr", 0)
+    if(openReturnCode == 0){
+        throw "The clipboard could not be opened`nMost likely another process is locking it`n`nError: '" . DllCall("GetLastError") . "'"
+    }
+
+    clipFormatIDArray := []
+    clipFormatID := 0
+    Loop {
+        clipFormatID := DllCall("EnumClipboardFormats", "Uint", clipFormatID)
+        if (clipFormatID == 0)
+            break
+        clipFormatIDArray.Push(clipFormatID)
+    }
+
+    closeReturnCode := DllCall("CloseClipboard")
+    if(closeReturnCode == 0){
+        throw "The clipboard could not be closed`n`nError: '" . DllCall("GetLastError") . "'"
+    }
+
+    return clipFormatIDArray
+}
+
 ; Tells whether an object contains a specified value (or values)
 hasValue(containingObject, valueToSearchFor) {
     valueToSearchForObject := valueToSearchFor
