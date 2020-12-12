@@ -17,6 +17,7 @@ isFile(path) {
     return (attributes && !InStr(attributes, "D"))
 }
 
+; Returns all of the clipboard format IDs that apply to the current clipboard content
 getClipFormatIDs() {
     openReturnCode := DllCall("OpenClipboard", "Ptr", 0)
     if(openReturnCode == 0){
