@@ -17,6 +17,20 @@ isFile(path) {
     return (attributes && !InStr(attributes, "D"))
 }
 
+; Creates a normal tooltip, which automatically disappeares after the set timeout
+tmpToolTip(content := "", timeout := 1000, x := "", y := "", toolTipId := "") {
+	global tmpToolTipId
+	tmpToolTipId := toolTipId
+	
+	ToolTip, %content%, %x%, %y%, %tmpToolTipId%
+	SetTimer TmpToolTipOff, -%timeout%
+	return
+
+	TmpToolTipOff:
+	ToolTip,,,, %tmpToolTipId%
+	return
+}
+
 ; Returns all of the clipboard format IDs that apply to the current clipboard content
 getClipFormatIDs() {
     openReturnCode := DllCall("OpenClipboard", "Ptr", 0)
