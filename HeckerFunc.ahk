@@ -184,6 +184,12 @@ unescapeString(string, escChar := "``") {
     return unescapedString
 }
 
+; Mathematically correct modulo (>0)
+mathMod(number, base) {
+    standardMod := Mod(number, base)
+    return standardMod < 0 ? standardMod + base : standardMod
+}
+
 ; Creates the combinations of an array of elements
 ; 
 ; Example: getCombinations([1,2]) should return [[], [1], [2], [1,2]]
