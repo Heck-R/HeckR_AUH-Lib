@@ -334,3 +334,52 @@ mitmInput(callback := -1, blockKeys := false, excludeFromBlock := "1, 2") {
 
 	Hotkey If
 }
+
+; Reads any one key's virtual key value (mouse, joystick, etc. included)
+; 
+; PARAMETER blockKey (default: true) - Whether to block the key when reading
+; PARAMETER timeout (miliseconds; default: 0) - After how much time should the reading automatically disable if no key is pressed. No timeout if <= 0
+readSingleKey(blockKey := true, timeout := 0) {
+	global readSingleKey_prepared ;Indicates whether the prepare already executed or not
+	global readSingleKey_lastKeyBlocked ;Indicates whether the key blocking was enabled last time (must re-prepare if different than current blockKey)
+	global readSingleKey_readKeyName ;Variable to store the recorded key's name
+
+	; Set variables
+	useTimeout := timeout > 0
+
+	; Prepare
+	if ( (!readSingleKey_prepared) || blockKey != readSingleKey_lastKeyBlocked) {
+		readSingleKey_prepared := true
+
+		mitmInput("singleKeyRecorder", blockKey, "")
+	}
+	readSingleKey_lastKeyBlocked := blockKey
+
+	; Enable key reading
+	readSingleKey_readKeyName := ""
+	mitmInput(true)
+
+	readWindowText := "Please press the key you wish to record"
+	readWindowText .= (blockKey ? "`n(The keypress will not have any effect due to the recording)" : "")
+	readWindowText .= (useTimeout ? "`n(You have " . timeout / 1000 . " seconds)" : "")
+	Tooltip, %readWindowText%, 0, 0
+	
+	; Wait for key to be read or timeout
+	startTime := A_TickCount
+	while ( (readSingleKey_readKeyName == "") && ((!useTimeout) || (A_TickCount < startTime + timeout)) ) {
+		Sleep 50
+	}
+
+	; Disable key reading
+	Tooltip
+	mitmInput(false)
+	
+	; Return key name without no-keyblock modifier
+	return LTrim(readSingleKey_readKeyName, "~")
+
+	;-------------------
+
+	singleKeyRecorder:
+		readSingleKey_readKeyName := A_ThisHotkey
+	return
+}
