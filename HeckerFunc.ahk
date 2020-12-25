@@ -259,3 +259,78 @@ getCombinations(elements, subSetSize = -1, joinConbinationsWith = false) {
 
     return combinations
 }
+
+; Mandatory #if clause for using conditional hotkeys in mitmInput()
+#If mitmInput_enabled
+#If
+
+; Creates hotkeys for every possible key using virtual keycodes (mouse, joystick, etc. included)
+; With this, a function can be inserted before each and every keystroke (mitm ~ Man In The Middle)
+; 
+; There are 2 functionallities based on the first parameter's value:
+; 1)
+; PARAMETER callback (default: -1) - In case 0, 1 or -1, it enables / disables the the #if directive which contains all the hotkeys related to this function (if created)
+;   * 0: Enable hotkeys
+;   * 1: Disable hotkeys
+;   * -1: Switch between enabled / disabled state of hotkeys
+; 2)
+; PARAMETER callback (default: -1) - A label / function name / function object that is provided to the created Hotkeys. It will be called on each keypress (see https://www.autohotkey.com/docs/commands/Hotkey.htm > Label)
+; PARAMETER blockKeys (default: false) - Whether to block the keys
+;   * false: Do not block keys
+;   * true: Block all keys (this can be dangerous, since it can possibly block every possible input. You can use the "excludeFromBlock" parameter for safety)
+;   * string (comma separated): Only block the keys with listed virtual key values (eg.: "1, 2" [left and right click])
+; PARAMETER excludeFromBlock (default: "1, 2") - Comma separated string, containing the virtual key values NOT to block (overwrites the "blockKeys" parameter)
+mitmInput(callback := -1, blockKeys := false, excludeFromBlock := "1, 2") {
+	global mitmInput_enabled ;Switch for the recorder hotkeys
+
+	; Enable / Disable hotkeys if first param is a bool
+	if (callback == true || callback == false) {
+		mitmInput_enabled := callback
+		return
+	}
+    if (callback == -1) {
+		mitmInput_enabled := !mitmInput_enabled
+		return
+    }
+
+	; Split key arrays
+	excludeFromBlockArray := StrSplit(excludeFromBlock, ",", " ")
+	realBlockKeys := isObject(blockKeys) ? StrSplit(blockKeys, ",", " ") : blockKeys
+
+
+	; Prepare looping through hexa 0-255
+	firstHexList := ["", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"]
+	secondHexList := ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"]
+
+	Hotkey If, mitmInput_enabled
+
+	loop 16 {
+		firstChar := firstHexList[A_Index]
+		loop 16 {
+			secondChar := secondHexList[A_Index]
+			virtualNum=%firstChar%%secondChar%
+			
+			; There is no vk0
+			if (virtualNum == "0"){
+				continue
+			}
+			
+			noBlockPrefix := ""
+			if ( (realBlockKeys == false) || hasValue(excludeFromBlockArray, virtualNum)) {
+				noBlockPrefix := "~"
+			}
+			else if (realBlockKeys == true) {
+				noBlockPrefix := ""
+			}
+			else if (isObject(realBlockKeys)) {
+				noBlockPrefix := hasValue(realBlockKeys, virtualNum) ? "" : "~"
+			} else {
+				Throw "Argument 'blockKeys' must be a bool, or a comma separated string, but it is neither"
+			}
+
+			Hotkey, %noBlockPrefix%vk%virtualNum%, %callback%
+		}
+	}
+
+	Hotkey If
+}
