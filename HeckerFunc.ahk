@@ -383,3 +383,54 @@ readSingleKey(blockKey := true, timeout := 0) {
 		readSingleKey_readKeyName := A_ThisHotkey
 	return
 }
+
+; Map a funtion to a hotkey that is defined in an config ini file
+; 
+; PARAMETER configFile - String path to the config ini file
+; PARAMETER configSectionName - Ini section where the hotkey is set
+; PARAMETER hotkeyFunctionMapping - Contains the ini key name for the hotkey, and the name of the function to be used. Can be one of the following formats:
+;   - "iniAndFunctionName": In case this is a string, the ini key name and the function name has to be identical.
+;   - ["iniKey", "functionName"]: An array can be defined, in which case the ini key name and the function name can be different.
+;   - ["iniKey", "functionName", "releaseFunctionName"]: If a non empty third string is also passed in the array, the release of the hotkey will trigger the function with the provided name.
+; PARAMETER paramsToBind (default: <no parameters>) - Array of parameters to bind to the hotkey function(s)
+; PARAMETER threadNum (default: 1) - Number of max parallel execution of the same hotkey
+mapConfigHotkeyToFunction(configFile, configSectionName, hotkeyFunctionMapping, paramsToBind := "", threadNum := 1) {
+    ; Handle hotkeyFunctionMapping being either a string or an array
+    iniKey := hotkeyFunctionMapping
+    functionName := hotkeyFunctionMapping
+    if (isObject(hotkeyFunctionMapping)) {
+        iniKey := hotkeyFunctionMapping[1]
+        functionName := hotkeyFunctionMapping[2]
+    }
+
+    ; Key combination for the hotkey
+    IniRead, toBeHotkey, %configFile% , %configSectionName%, %iniKey%, %A_Space%
+
+    ; If a key combination is defined, create the hotkey
+    if (toBeHotkey != "") {
+        ; Create function reference bor binding
+        hotkeyFunction := Func(functionName)
+        
+        ; Bind parameters
+        allParamsToBind := []
+        if (paramsToBind != "")
+            for paramIndex, paramValue in paramsToBind {
+                allParamsToBind.Push(paramValue)
+            }
+        
+        ; Bind key combination if parameters are still needed
+        if (hotkeyFunction.MinParams > allParamsToBind.MaxIndex())
+            allParamsToBind.Push(toBeHotkey)
+        
+        ; Create hotkey
+        hotkeyFunction := hotkeyFunction.Bind(allParamsToBind*)
+        Hotkey %toBeHotkey%, %hotkeyFunction%, T%threadNum%
+        
+        ; Create release hotkey
+        if (hotkeyFunctionMapping[3] != "") {
+            releaseFunction := Func(hotkeyFunctionMapping[3])
+            releaseFunction := releaseFunction.Bind(allParamsToBind*)
+            Hotkey %toBeHotkey% up, %releaseFunction%, T%threadNum%
+        }
+    }
+}
