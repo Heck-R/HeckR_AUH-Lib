@@ -267,6 +267,8 @@ getCombinations(elements, subSetSize = -1, joinConbinationsWith = false) {
 ; Creates hotkeys for every possible key using virtual keycodes (mouse, joystick, etc. included)
 ; With this, a function can be inserted before each and every keystroke (mitm ~ Man In The Middle)
 ; 
+; Note, that the created hotkeys do not become enabled when they are first created with this function. It has to be called again for that
+; 
 ; There are 2 functionallities based on the first parameter's value:
 ; 1)
 ; PARAMETER callback (default: -1) - In case 0, 1 or -1, it enables / disables the the #if directive which contains all the hotkeys related to this function (if created)
@@ -275,12 +277,19 @@ getCombinations(elements, subSetSize = -1, joinConbinationsWith = false) {
 ;   * -1: Switch between enabled / disabled state of hotkeys
 ; 2)
 ; PARAMETER callback (default: -1) - A label / function name / function object that is provided to the created Hotkeys. It will be called on each keypress (see https://www.autohotkey.com/docs/commands/Hotkey.htm > Label)
+; PARAMETER triggerOnKeyDown (default: true) - Whether or not to call the callback when a key is pressed down.
+;   Note, that most keys tend to "spam" trigger the hotkey when being held down.
+;   To avoid that, the virtual key can be extracted, and waited for in the callback. E.g.:
+;       RegExMatch(A_ThisHotkey, "vk\w{1,2}" , hotkeyMatch)
+;       KeyWait % hotkeyMatch
+; PARAMETER triggerOnKeyUp (default: false) - Whether or not to call the callback when a key is released
 ; PARAMETER blockKeys (default: false) - Whether to block the keys
 ;   * false: Do not block keys
 ;   * true: Block all keys (this can be dangerous, since it can possibly block every possible input. You can use the "excludeFromBlock" parameter for safety)
 ;   * string (comma separated): Only block the keys with listed virtual key values (eg.: "1, 2" [left and right click])
 ; PARAMETER excludeFromBlock (default: "1, 2") - Comma separated string, containing the virtual key values NOT to block (overwrites the "blockKeys" parameter)
-mitmInput(callback := -1, blockKeys := false, excludeFromBlock := "1, 2") {
+; PARAMETER hotkeyOptions (default: "") - A "Hotkey" commands "options" parameter to be passed to every hotkey created (see https://www.autohotkey.com/docs/commands/Hotkey.htm > Options)
+mitmInput(callback := -1, triggerOnKeyDown := true, triggerOnKeyUp := false, blockKeys := false, excludeFromBlock := "1, 2", hotkeyOptions := "") {
 	global mitmInput_enabled ;Switch for the recorder hotkeys
 
 	; Enable / Disable hotkeys if first param is a bool
@@ -328,7 +337,10 @@ mitmInput(callback := -1, blockKeys := false, excludeFromBlock := "1, 2") {
 				Throw "Argument 'blockKeys' must be a bool, or a comma separated string, but it is neither"
 			}
 
-			Hotkey, %noBlockPrefix%vk%virtualNum%, %callback%
+            if (triggerOnKeyDown)
+			    Hotkey, %noBlockPrefix%*vk%virtualNum%, %callback%, %hotkeyOptions%
+            if (triggerOnKeyUp)
+			    Hotkey, %noBlockPrefix%*vk%virtualNum% up, %callback%, %hotkeyOptions%
 		}
 	}
 
@@ -351,7 +363,7 @@ readSingleKey(blockKey := true, timeout := 0) {
 	if ( (!readSingleKey_prepared) || blockKey != readSingleKey_lastKeyBlocked) {
 		readSingleKey_prepared := true
 
-		mitmInput("singleKeyRecorder", blockKey, "")
+		mitmInput("singleKeyRecorder", true, false, blockKey, "")
 	}
 	readSingleKey_lastKeyBlocked := blockKey
 
