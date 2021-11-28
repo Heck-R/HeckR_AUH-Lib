@@ -184,6 +184,26 @@ unescapeString(string, escChar := "``") {
     return unescapedString
 }
 
+; Gets the absolute cursor position on a multiple screen setup (relative to the main display's top left)
+; This is basically a wrapper for the GetCursorPos win32 api instead of the dll call
+; See https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getcursorpos
+; 
+; RETURNS An assocuative array with x and y keys
+getCursorPos() {
+    ; POINT structure = 8 bytes 
+    VarSetCapacity(POINT, 8, 0)
+    DllCall("GetCursorPos", uint, &POINT)
+
+    return {x: NumGet(POINT, 0), y: NumGet(POINT, 4)}
+}
+
+; Moves the cursor to an absolute position on a multiple screen setup (relative to the main display's top left)
+; This is basically a wrapper for the SetCursorPos win32 api instead of the dll call
+; See https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getcursorpos
+setCursorPos(x, y) {
+    DllCall("SetCursorPos", "int", x, "int", y)
+}
+
 ; Mathematically correct modulo (>0)
 mathMod(number, base) {
     standardMod := Mod(number, base)
