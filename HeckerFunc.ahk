@@ -267,7 +267,9 @@ getCombinations(elements, subSetSize = -1, joinConbinationsWith = false) {
 ; Creates hotkeys for every possible key using virtual keycodes (mouse, joystick, etc. included)
 ; With this, a function can be inserted before each and every keystroke (mitm ~ Man In The Middle)
 ; 
-; Note, that the created hotkeys do not become enabled when they are first created with this function. It has to be called again for that
+; NOTES
+; - The created hotkeys do not become enabled when they are first created with this function. It has to be called again for that
+; - Resets "Hotkey If" on autoDirective == true
 ; 
 ; There are 2 functionallities based on the first parameter's value:
 ; 1)
@@ -275,6 +277,7 @@ getCombinations(elements, subSetSize = -1, joinConbinationsWith = false) {
 ;   * 0: Enable hotkeys
 ;   * 1: Disable hotkeys
 ;   * -1: Switch between enabled / disabled state of hotkeys
+;   NOTE: For this, the autoDirective parameter must be true
 ; 2)
 ; PARAMETER callback (default: -1) - A label / function name / function object that is provided to the created Hotkeys. It will be called on each keypress (see https://www.autohotkey.com/docs/commands/Hotkey.htm > Label)
 ; PARAMETER triggerOnKeyDown (default: true) - Whether or not to call the callback when a key is pressed down.
@@ -283,13 +286,27 @@ getCombinations(elements, subSetSize = -1, joinConbinationsWith = false) {
 ;       RegExMatch(A_ThisHotkey, "vk\w{1,2}" , hotkeyMatch)
 ;       KeyWait % hotkeyMatch
 ; PARAMETER triggerOnKeyUp (default: false) - Whether or not to call the callback when a key is released
-; PARAMETER blockKeys (default: false) - Whether to block the keys
-;   * false: Do not block keys
-;   * true: Block all keys (this can be dangerous, since it can possibly block every possible input. You can use the "excludeFromBlock" parameter for safety)
-;   * string (comma separated): Only block the keys with listed virtual key values (eg.: "1, 2" [left and right click])
-; PARAMETER excludeFromBlock (default: "1, 2") - Comma separated string, containing the virtual key values NOT to block (overwrites the "blockKeys" parameter)
-; PARAMETER hotkeyOptions (default: "") - A "Hotkey" commands "options" parameter to be passed to every hotkey created (see https://www.autohotkey.com/docs/commands/Hotkey.htm > Options)
-mitmInput(callback := -1, triggerOnKeyDown := true, triggerOnKeyUp := false, blockKeys := false, excludeFromBlock := "1, 2", hotkeyOptions := "") {
+; PARAMETER hotkeyModifiers (default: "~*") - Hotkey modifiers to be added to all of the created hotkeys (see https://www.autohotkey.com/docs/Hotkeys.htm#Symbols)
+;   E.g.: One of the default modifiers "~" make sure, that the keys are not blocked
+;   CAUTION: Removing the ~ can potentially prevent any and every input, rendering the machine unusable while the created hotkeys are active
+; PARAMETER hotkeyOptions (default: "") - A "Hotkey" commands "options" parameter to be passed to all of the created hotkeys (see https://www.autohotkey.com/docs/commands/Hotkey.htm > Options)
+; PARAMETER autoDirective (default: true) - Whether or not to use an implicit #if directive, in order for the created hotkeys to be toggleable through the "callback" parameter
+;   In case false is set, the hotkeys will get the #if directive last defined by a "Hotkey If" (see https://www.autohotkey.com/docs/commands/Hotkey.htm)
+;   NOTE: In case of true, the "Hotkey If" will be called with empty parameters, and reset the #if directive for any subsequent Hotkey creation, unless it is defined (again)
+; PARAMETER keyFilter (default: false) - The keys for which hotkeys will be created can be filtered via this parameter. There are a few possible types of values that can be passed
+;   * false: No filtering, hotkeys will be created for each and every key
+;   * <regex string>: Hotkeys will be created for all keys that match this regex
+;   * [true, <regex string>]: An array containing a bool, and then the same regex mentioned above.
+;       If the boolean is true, the regex will become a blacklist filter => hotkeys will be created for every key EXCEPT the matcing ones
+;       There is no difference between providing just a <regex string> or a [false, <regex string>] array
+;   NOTE: The keys are virtual keys formatted as "vk<hex>", and an optional " up" at the end, for the release of the keys (in case triggerOnKeyUp is true). E.g.: "vk41 up" ~ releasing the "a" button
+; PARAMETER modifierOptionExceptions (default: false) - Exception keys can be defined with different "hotkeyModifiers" and "hotkeyOptions" than the remaining ones
+;   The value must essentially be an array of objects, where every object can have 3 properties:
+;       * filter (mandatory): A similar filter to the "keyFilter" parameter, with the exception, that this must be a  <regex string>
+;       * hotkeyModifiers: Same as the "hotkeyModifiers" parameter but this one overwrites the general one for the filtered keys
+;       * hotkeyOptions: Same as the "hotkeyOptions" parameter but this one overwrites the general one for the filtered keys
+;   NOTE: The order matters ~ in case of multiple filters matching a key, the first match will be the dominant one
+mitmInput(callback := -1, triggerOnKeyDown := true, triggerOnKeyUp := false, hotkeyModifiers := "~*", hotkeyOptions := "", autoDirective := true, keyFilter := false, modifierOptionExceptions := false) {
 	global mitmInput_enabled ;Switch for the recorder hotkeys
 
 	; Enable / Disable hotkeys if first param is a bool
@@ -297,54 +314,75 @@ mitmInput(callback := -1, triggerOnKeyDown := true, triggerOnKeyUp := false, blo
 		mitmInput_enabled := callback
 		return
 	}
+    ; Switch hotkeys on default value
     if (callback == -1) {
 		mitmInput_enabled := !mitmInput_enabled
 		return
     }
 
-	; Split key arrays
-	excludeFromBlockArray := StrSplit(excludeFromBlock, ",", " ")
-	realBlockKeys := isObject(blockKeys) ? StrSplit(blockKeys, ",", " ") : blockKeys
-
-
 	; Prepare looping through hexa 0-255
 	firstHexList := ["", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"]
 	secondHexList := ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"]
+    pressReleaseModifierList := ["", " up"]
 
-	Hotkey If, mitmInput_enabled
+    if (autoDirective)
+	    Hotkey If, mitmInput_enabled
 
-	loop 16 {
-		firstChar := firstHexList[A_Index]
-		loop 16 {
-			secondChar := secondHexList[A_Index]
-			virtualNum=%firstChar%%secondChar%
-			
-			; There is no vk0
-			if (virtualNum == "0"){
-				continue
-			}
-			
-			noBlockPrefix := ""
-			if ( (realBlockKeys == false) || hasValue(excludeFromBlockArray, virtualNum)) {
-				noBlockPrefix := "~"
-			}
-			else if (realBlockKeys == true) {
-				noBlockPrefix := ""
-			}
-			else if (isObject(realBlockKeys)) {
-				noBlockPrefix := hasValue(realBlockKeys, virtualNum) ? "" : "~"
-			} else {
-				Throw "Argument 'blockKeys' must be a bool, or a comma separated string, but it is neither"
-			}
+    for firstHexIndex, firstHexChar in firstHexList {
+        for secondHexIndex, secondHexChar in secondHexList {
+            for pressReleaseModifierIndex, pressReleaseModifier in pressReleaseModifierList {
+                ; Determine virtual key
+                virtualNum=%firstHexChar%%secondHexChar%
+                virtualKey=vk%virtualNum%
+                hotkeyBase=%virtualKey%%pressReleaseModifier%
+                
+                ; There is no vk0
+                if (virtualNum == "0")
+                    continue
+                
+                ; Filter
+                if (keyFilter != false){
+                    negateKeyFilter := false
+                    actualKeyFilter := keyFilter
+                    ; Handle array filter like [true, "vk1"]
+                    if (isObject(keyFilter)) {
+                        negateKeyFilter := keyFilter[1]
+                        actualKeyFilter := keyFilter[2]
+                    }
+                    if (negateKeyFilter ^ (RegExMatch(hotkeyBase, actualKeyFilter) == 0))
+                        continue
+                }
 
-            if (triggerOnKeyDown)
-			    Hotkey, %noBlockPrefix%*vk%virtualNum%, %callback%, %hotkeyOptions%
-            if (triggerOnKeyUp)
-			    Hotkey, %noBlockPrefix%*vk%virtualNum% up, %callback%, %hotkeyOptions%
+                ; Skip based on press or release based on settings
+                isReleaseHotkey := InStr(pressReleaseModifier, "up")
+                if (! ((triggerOnKeyDown && !isReleaseHotkey) || (triggerOnKeyUp && isReleaseHotkey)) )
+                    continue
+                
+                ; Exceptional modifiers
+                actualHotkeyModifiers := hotkeyModifiers
+                actualHotkeyOptions := hotkeyOptions
+                if (modifierOptionExceptions != false){
+                    ; Check all the exceptions
+                    for modifierOptionExceptionIndex, modifierOptionException in modifierOptionExceptions {
+                        ; Check exception filter
+                        if (RegExMatch(hotkeyBase, modifierOptionException.filter) > 0) {
+                            if (modifierOptionException.HasKey("hotkeyModifiers"))
+                                actualHotkeyModifiers := modifierOptionException.hotkeyModifiers
+                            if (modifierOptionException.HasKey("hotkeyOptions"))
+                                actualHotkeyOptions := modifierOptionException.hotkeyOptions
+                            break
+                        }
+                    }
+                }
+                ;msgbox %actualHotkeyModifiers%%hotkeyBase%
+                ; Register hotkey
+                Hotkey, %actualHotkeyModifiers%%hotkeyBase%, %callback%, %actualHotkeyOptions%
+            }
 		}
 	}
 
-	Hotkey If
+    if (autoDirective)
+	    Hotkey If
 }
 
 ; Reads any one key's virtual key value (mouse, joystick, etc. included)
@@ -363,7 +401,7 @@ readSingleKey(blockKey := true, timeout := 0) {
 	if ( (!readSingleKey_prepared) || blockKey != readSingleKey_lastKeyBlocked) {
 		readSingleKey_prepared := true
 
-		mitmInput("singleKeyRecorder", true, false, blockKey, "")
+		mitmInput("singleKeyRecorder", true, false, "")
 	}
 	readSingleKey_lastKeyBlocked := blockKey
 
