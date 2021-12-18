@@ -289,7 +289,7 @@ getCombinations(elements, subSetSize = -1, joinConbinationsWith = false) {
 ; 
 ; NOTES
 ; - The created hotkeys do not become enabled when they are first created with this function. It has to be called again for that
-; - Resets "Hotkey If" on autoDirective == true
+; - Overwrites Hotkey If on autoDirective := true
 ; 
 ; There are 2 functionallities based on the first parameter's value:
 ; 1)
@@ -300,33 +300,31 @@ getCombinations(elements, subSetSize = -1, joinConbinationsWith = false) {
 ;   NOTE: For this, the autoDirective parameter must be true
 ; 2)
 ; PARAMETER callback (default: -1) - A label / function name / function object that is provided to the created Hotkeys. It will be called on each keypress (see https://www.autohotkey.com/docs/commands/Hotkey.htm > Label)
-; PARAMETER triggerOnKeyDown (default: true) - Whether or not to call the callback when a key is pressed down.
-;   Note, that most keys tend to "spam" trigger the hotkey when being held down.
-;   To avoid that, the virtual key can be extracted, and waited for in the callback. E.g.:
-;       RegExMatch(A_ThisHotkey, "vk\w{1,2}" , hotkeyMatch)
-;       KeyWait % hotkeyMatch
-; PARAMETER triggerOnKeyUp (default: false) - Whether or not to call the callback when a key is released
+; PARAMETER autoDirective (default: true) - Whether or not to use an implicit #if directive, in order for the created hotkeys to be toggleable through the "callback" parameter
+;   In case false is set, the hotkeys will get the #if directive last defined by a "Hotkey If" (see https://www.autohotkey.com/docs/commands/Hotkey.htm)
+;   NOTE: In case of true, the "Hotkey If" will be called with empty parameters, and reset the #if directive for any subsequent Hotkey creation, unless it is defined (again)
+; PARAMETER keyFilter (default: "!up") - The keys for which hotkeys will be created can be filtered via this parameter.
+;   The keys are virtual keys formatted as "vk<hex>", and an optional " up" at the end, for the release of the keys (in case triggerOnKeyUp is true). E.g.: "vk41 up" ~ releasing the "a" button
+;   There are a few possible types of values that can be passed
+;   * false: No filtering, hotkeys will be created for each and every key
+;   * <regex string>: Hotkeys will be created for all keys that match this regex
+;   * !<regex string>: The same regex mentioned above, but the first character is a "!"
+;       In this case the regex will become a blacklist filter => hotkeys will be created for every key that DOES NOT match the regex
+;   NOTE: Most keys tend to "spam" trigger the hotkey when being held down. (e.g.: holding down the "a" button types multiple letters while being held down)
+;         To avoid that, the virtual key can be extracted, and waited for in the callback. E.g.:
+;             RegExMatch(A_ThisHotkey, "vk\w{1,2}" , hotkeyMatch)
+;             KeyWait % hotkeyMatch
 ; PARAMETER hotkeyModifiers (default: "~*") - Hotkey modifiers to be added to all of the created hotkeys (see https://www.autohotkey.com/docs/Hotkeys.htm#Symbols)
 ;   E.g.: One of the default modifiers "~" make sure, that the keys are not blocked
 ;   CAUTION: Removing the ~ can potentially prevent any and every input, rendering the machine unusable while the created hotkeys are active
 ; PARAMETER hotkeyOptions (default: "") - A "Hotkey" commands "options" parameter to be passed to all of the created hotkeys (see https://www.autohotkey.com/docs/commands/Hotkey.htm > Options)
-; PARAMETER autoDirective (default: true) - Whether or not to use an implicit #if directive, in order for the created hotkeys to be toggleable through the "callback" parameter
-;   In case false is set, the hotkeys will get the #if directive last defined by a "Hotkey If" (see https://www.autohotkey.com/docs/commands/Hotkey.htm)
-;   NOTE: In case of true, the "Hotkey If" will be called with empty parameters, and reset the #if directive for any subsequent Hotkey creation, unless it is defined (again)
-; PARAMETER keyFilter (default: false) - The keys for which hotkeys will be created can be filtered via this parameter. There are a few possible types of values that can be passed
-;   * false: No filtering, hotkeys will be created for each and every key
-;   * <regex string>: Hotkeys will be created for all keys that match this regex
-;   * [true, <regex string>]: An array containing a bool, and then the same regex mentioned above.
-;       If the boolean is true, the regex will become a blacklist filter => hotkeys will be created for every key EXCEPT the matcing ones
-;       There is no difference between providing just a <regex string> or a [false, <regex string>] array
-;   NOTE: The keys are virtual keys formatted as "vk<hex>", and an optional " up" at the end, for the release of the keys (in case triggerOnKeyUp is true). E.g.: "vk41 up" ~ releasing the "a" button
 ; PARAMETER modifierOptionExceptions (default: false) - Exception keys can be defined with different "hotkeyModifiers" and "hotkeyOptions" than the remaining ones
 ;   The value must essentially be an array of objects, where every object can have 3 properties:
-;       * filter (mandatory): A similar filter to the "keyFilter" parameter, with the exception, that this must be a  <regex string>
+;       * filter (mandatory): A similar filter to the "keyFilter" parameter, with the exception, that this must be a <regex string>
 ;       * hotkeyModifiers: Same as the "hotkeyModifiers" parameter but this one overwrites the general one for the filtered keys
 ;       * hotkeyOptions: Same as the "hotkeyOptions" parameter but this one overwrites the general one for the filtered keys
 ;   NOTE: The order matters ~ in case of multiple filters matching a key, the first match will be the dominant one
-mitmInput(callback := -1, triggerOnKeyDown := true, triggerOnKeyUp := false, hotkeyModifiers := "~*", hotkeyOptions := "", autoDirective := true, keyFilter := false, modifierOptionExceptions := false) {
+mitmInput(callback := -1, autoDirective := true, keyFilter := "!up", hotkeyModifiers := "~*", hotkeyOptions := "", modifierOptionExceptions := false) {
 	global mitmInput_enabled ;Switch for the recorder hotkeys
 
 	; Enable / Disable hotkeys if first param is a bool
@@ -344,7 +342,16 @@ mitmInput(callback := -1, triggerOnKeyDown := true, triggerOnKeyUp := false, hot
 	firstHexList := ["", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"]
 	secondHexList := ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"]
     pressReleaseModifierList := ["", " up"]
+    
+    ; Prepate for filter negation
+    negateKeyFilter := false
+    keyFilterRegex := keyFilter
+    if (keyFilter != false && SubStr(keyFilter, 1, 1) == "!") {
+        negateKeyFilter := true
+        keyFilterRegex := SubStr(keyFilter, 2)
+    }
 
+    ; Directive
     if (autoDirective)
 	    Hotkey If, mitmInput_enabled
 
@@ -362,21 +369,9 @@ mitmInput(callback := -1, triggerOnKeyDown := true, triggerOnKeyUp := false, hot
                 
                 ; Filter
                 if (keyFilter != false){
-                    negateKeyFilter := false
-                    actualKeyFilter := keyFilter
-                    ; Handle array filter like [true, "vk1"]
-                    if (isObject(keyFilter)) {
-                        negateKeyFilter := keyFilter[1]
-                        actualKeyFilter := keyFilter[2]
-                    }
-                    if (negateKeyFilter ^ (RegExMatch(hotkeyBase, actualKeyFilter) == 0))
+                    if (negateKeyFilter ^ (RegExMatch(hotkeyBase, keyFilterRegex) == 0))
                         continue
                 }
-
-                ; Skip based on press or release based on settings
-                isReleaseHotkey := InStr(pressReleaseModifier, "up")
-                if (! ((triggerOnKeyDown && !isReleaseHotkey) || (triggerOnKeyUp && isReleaseHotkey)) )
-                    continue
                 
                 ; Exceptional modifiers
                 actualHotkeyModifiers := hotkeyModifiers
