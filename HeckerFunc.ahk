@@ -416,7 +416,7 @@ readSingleKey(blockKey := true, timeout := 0) {
 	if ( (!readSingleKey_prepared) || blockKey != readSingleKey_lastKeyBlocked) {
 		readSingleKey_prepared := true
 
-		mitmInput("singleKeyRecorder", true, false, "")
+		mitmInput("singleKeyRecorder", true, "!up", "")
 	}
 	readSingleKey_lastKeyBlocked := blockKey
 
@@ -440,7 +440,7 @@ readSingleKey(blockKey := true, timeout := 0) {
 	mitmInput(false)
 	
 	; Return key name without no-keyblock modifier
-	return LTrim(readSingleKey_readKeyName, "~")
+	return readSingleKey_readKeyName
 
 	;-------------------
 
