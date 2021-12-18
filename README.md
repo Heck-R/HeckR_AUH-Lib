@@ -30,3 +30,8 @@ Source: [AutoHotkey topic](https://www.autohotkey.com/boards/viewtopic.php?t=651
 
 Author: [Dávid Heckmann (Heck-R)](https://github.com/Heck-R)  \
 Source: [This same repo](https://github.com/Heck-R/HeckR_AUH-Lib)
+
+### JSON.ahk
+
+Author: [Coco (cocobelgica)](https://github.com/cocobelgica)  \
+Source: [GitHub repo](https://github.com/cocobelgica/AutoHotkey-JSON)
