@@ -188,7 +188,7 @@ unescapeString(string, escChar := "``") {
 ; This is basically a wrapper for the GetCursorPos win32 api instead of the dll call
 ; See https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getcursorpos
 ; 
-; RETURNS An assocuative array with x and y keys
+; RETURNS An associative array with x and y keys
 getCursorPos() {
     ; POINT structure = 8 bytes 
     VarSetCapacity(POINT, 8, 0)
