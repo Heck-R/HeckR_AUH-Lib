@@ -499,3 +499,46 @@ mapConfigHotkeyToFunction(configFile, configSectionName, hotkeyFunctionMapping, 
         }
     }
 }
+
+; Get a value from a confih / ini file
+; The benefit compared to IniRead is
+; 
+; NOTES
+; - An empty value in the config is treated as if not defined at all
+; 
+; PARAMETER filePath - Path of the config / ini file
+; PARAMETER sectionName - name of the section containing the key to read
+; PARAMETER keyName - the name of the key to read
+; PARAMETER defaultValue [any|"ThrowException"] (default: "ThrowException") - The value to use when the config key cannot be found
+;   - any: Return the value
+;   - "ThrowException": An exception is thrown
+; PARAMETER validatorRegex [regex string] (default: "") - Validates the value. The validation is successful if the pattern can be found anywhere in the value
+; PARAMETER invalidAction ["ThrowException"|"UseDefaultValue"] (default: "ThrowException") - The action to take in case the value is not valid
+;   - "ThrowException": An exception is thrown
+;   - "UseDefaultValue": Return the default value
+; RETURN [string|any]
+;   - string: The config value if the key is found, and the value is valid
+;   - any: The provided default othervise (unless throwing an exception is set)
+getConfigValue(filePath, sectionName, keyName, defaultValue := "ThrowException", validatorRegex := "", invalidAction := "ThrowException") {
+    IniRead, configValue, %filePath%, %sectionName%, %keyName%, %A_Space%
+	
+    ; Key not found
+    if (configValue == ""){
+        if (defaultValue == "ThrowException")
+            throw "The key could not be found`nFile: '" . filePath . "'`nSection: '" . sectionName . "'`nKey: '" . keyName . "'"
+        else
+            return defaultValue
+    }
+    
+    ; Validate
+    if (RegExMatch(configValue, validatorRegex) == 0) {
+        if (invalidAction == "ThrowException" || (invalidAction == "UseDefaultValue" && defaultValue == "ThrowException"))
+            throw "The value does not match the provided pattern`nValue: '" . configValue . "'`nPattern: '" . validatorRegex . "'"
+        else if (invalidAction == "UseDefaultValue")
+            return defaultValue
+        else
+            throw "The parameter 'invalidAction' does not match the required pattern`nValue: '" . invalidAction . "'`nPattern: 'ThrowException|UseDefaultValue'"
+    }
+
+    return configValue
+}
