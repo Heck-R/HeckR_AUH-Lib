@@ -500,7 +500,7 @@ mapConfigHotkeyToFunction(configFile, configSectionName, hotkeyFunctionMapping, 
     }
 }
 
-; Get a value from a confih / ini file
+; Get a value from a config / ini file
 ; The benefit compared to IniRead is
 ; 
 ; NOTES
