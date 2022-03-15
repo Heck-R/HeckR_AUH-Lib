@@ -512,6 +512,9 @@ mapConfigHotkeyToFunction(configFile, configSectionName, hotkeyFunctionMapping, 
 ; PARAMETER defaultValue [any|"ThrowException"] (default: "ThrowException") - The value to use when the config key cannot be found
 ;   - any: Return the value
 ;   - "ThrowException": An exception is thrown
+; PARAMETER updateConfigFile [bool] (default: false) - If this is set to true, the key & value pair is added / overvritten in the config file
+;   Actual modification, takes place exactly when the default value is used, since othervise the key & value pair is already there
+;   The config file is created if necessary
 ; PARAMETER validatorRegex [regex string] (default: "") - Validates the value. The validation is successful if the pattern can be found anywhere in the value
 ; PARAMETER invalidAction ["ThrowException"|"UseDefaultValue"] (default: "ThrowException") - The action to take in case the value is not valid
 ;   - "ThrowException": An exception is thrown
@@ -519,25 +522,35 @@ mapConfigHotkeyToFunction(configFile, configSectionName, hotkeyFunctionMapping, 
 ; RETURN [string|any]
 ;   - string: The config value if the key is found, and the value is valid
 ;   - any: The provided default othervise (unless throwing an exception is set)
-getConfigValue(filePath, sectionName, keyName, defaultValue := "ThrowException", validatorRegex := "", invalidAction := "ThrowException") {
+getConfigValue(filePath, sectionName, keyName, defaultValue := "ThrowException", updateConfigFile := false, validatorRegex := "", invalidAction := "ThrowException") {
     IniRead, configValue, %filePath%, %sectionName%, %keyName%, %A_Space%
-	
+
+    useDefaultValue := false
+
     ; Key not found
     if (configValue == ""){
         if (defaultValue == "ThrowException")
             throw "The key could not be found`nFile: '" . filePath . "'`nSection: '" . sectionName . "'`nKey: '" . keyName . "'"
-        else
-            return defaultValue
+        
+        useDefaultValue := true
     }
     
     ; Validate
-    if (RegExMatch(configValue, validatorRegex) == 0) {
+    if (!useDefaultValue && RegExMatch(configValue, validatorRegex) == 0) {
         if (invalidAction == "ThrowException" || (invalidAction == "UseDefaultValue" && defaultValue == "ThrowException"))
             throw "The value does not match the provided pattern`nValue: '" . configValue . "'`nPattern: '" . validatorRegex . "'"
         else if (invalidAction == "UseDefaultValue")
-            return defaultValue
+            useDefaultValue := true
         else
             throw "The parameter 'invalidAction' does not match the required pattern`nValue: '" . invalidAction . "'`nPattern: 'ThrowException|UseDefaultValue'"
+    }
+
+    ; Use default value
+    if (useDefaultValue) {
+        if (updateConfigFile == true)
+            IniWrite, %defaultValue%, %filePath%, %sectionName%, %keyName%
+
+        return defaultValue
     }
 
     return configValue
