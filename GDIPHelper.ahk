@@ -66,9 +66,9 @@ GDIP_SetUp(width=-1, height=-1, posX=0, posY=0) {
 	
 	; Create a layered window (+E0x80000 : must be used for UpdateLayeredWindow to work!) that is always on top (+AlwaysOnTop), has no taskbar entry or caption
 	Gui, 1: -Caption +E0x80000 +LastFound +AlwaysOnTop +ToolWindow +OwnDialogs
-
-	; Show the window
-	Gui, 1: Show, NA
+	
+	; Hide the window when not being used, to avoid interfering with some applications due to its always on top nature
+	Gui, 1: Show, Hide
 
 	; Get a handle to this window we have created in order to update it later
 	GDIP_hwnd := WinExist()
@@ -80,6 +80,9 @@ GDIP_StartDraw() {
 	
 	; Only start to draw if we are not already drawing
 	if(!GDIP_IsDrawing){
+		; Show the window when drawing
+		Gui, 1: Show, NA
+
 		; Create a gdi bitmap with width and height of what we are going to draw into it. This is the entire drawing area for everything
 		GDIP_BitmapHandle := CreateDIBSection(GDIP_width, GDIP_height)
 
@@ -102,10 +105,12 @@ GDIP_EndDraw() {
 	
 	; Only end the draw if we are drawing
 	if(GDIP_IsDrawing){
+		; Hide the window when not being used, to avoid interfering with some applications due to its always on top nature
+		Gui, 1: Show, Hide
+
 		; Update the specified window we have created (GDIP_hwnd) with a handle to our bitmap (GDIP_DeviceContextHandle), specifying the x,y,w,h we want it positioned on our screen
 		; So this will position our gui at (GDIP_posX,GDIP_posY) with the Width and Height specified earlier
 		UpdateLayeredWindow(GDIP_hwnd, GDIP_DeviceContextHandle, GDIP_posX, GDIP_posY, GDIP_width, GDIP_height)
-
 
 		; Select the object back into the GDIP_DeviceContextHandle
 		SelectObject(GDIP_DeviceContextHandle, GDIP_BitmapObject)
