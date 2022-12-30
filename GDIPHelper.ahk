@@ -78,55 +78,59 @@ GDIP_SetUp(width=-1, height=-1, posX=0, posY=0) {
 GDIP_StartDraw() {
 	global
 	
-	; Only start to draw if we are not already drawing
-	if(!GDIP_IsDrawing){
-		; Show the window when drawing
-		Gui, 1: Show, NA
-
-		; Create a gdi bitmap with width and height of what we are going to draw into it. This is the entire drawing area for everything
-		GDIP_BitmapHandle := CreateDIBSection(GDIP_width, GDIP_height)
-
-		; Get a device context compatible with the screen
-		GDIP_DeviceContextHandle := CreateCompatibleDC()
-
-		; Select the bitmap into the device context
-		GDIP_BitmapObject := SelectObject(GDIP_DeviceContextHandle, GDIP_BitmapHandle)
-
-		; Get a pointer to the graphics of the bitmap, for use with drawing functions
-		GDIP_Graphics := Gdip_GraphicsFromHDC(GDIP_DeviceContextHandle)
-		
-		; Indicate that we are drawing
-		GDIP_IsDrawing := true
+	; Nothing to do when already drawing
+	if(GDIP_IsDrawing){
+		return
 	}
+
+	; Show the window when drawing
+	Gui, 1: Show, NA
+
+	; Create a gdi bitmap with width and height of what we are going to draw into it. This is the entire drawing area for everything
+	GDIP_BitmapHandle := CreateDIBSection(GDIP_width, GDIP_height)
+
+	; Get a device context compatible with the screen
+	GDIP_DeviceContextHandle := CreateCompatibleDC()
+
+	; Select the bitmap into the device context
+	GDIP_BitmapObject := SelectObject(GDIP_DeviceContextHandle, GDIP_BitmapHandle)
+
+	; Get a pointer to the graphics of the bitmap, for use with drawing functions
+	GDIP_Graphics := Gdip_GraphicsFromHDC(GDIP_DeviceContextHandle)
+	
+	; Indicate that we are drawing
+	GDIP_IsDrawing := true
 }
 
 GDIP_EndDraw() {
 	global
 	
-	; Only end the draw if we are drawing
-	if(GDIP_IsDrawing){
-		; Hide the window when not being used, to avoid interfering with some applications due to its always on top nature
-		Gui, 1: Show, Hide
-
-		; Update the specified window we have created (GDIP_hwnd) with a handle to our bitmap (GDIP_DeviceContextHandle), specifying the x,y,w,h we want it positioned on our screen
-		; So this will position our gui at (GDIP_posX,GDIP_posY) with the Width and Height specified earlier
-		UpdateLayeredWindow(GDIP_hwnd, GDIP_DeviceContextHandle, GDIP_posX, GDIP_posY, GDIP_width, GDIP_height)
-
-		; Select the object back into the GDIP_DeviceContextHandle
-		SelectObject(GDIP_DeviceContextHandle, GDIP_BitmapObject)
-
-		; Now the bitmap may be deleted
-		DeleteObject(GDIP_BitmapHandle)
-
-		; Also the device context related to the bitmap may be deleted
-		DeleteDC(GDIP_DeviceContextHandle)
-
-		; The graphics may now be deleted
-		Gdip_DeleteGraphics(GDIP_Graphics)
-		
-		; Indicate that we are drawing
-		GDIP_IsDrawing := false
+	; Nothing to do when already not drawing
+	if(!GDIP_IsDrawing){
+		return
 	}
+
+	; Hide the window when not being used, to avoid interfering with some applications due to its always on top nature
+	Gui, 1: Show, Hide
+
+	; Update the specified window we have created (GDIP_hwnd) with a handle to our bitmap (GDIP_DeviceContextHandle), specifying the x,y,w,h we want it positioned on our screen
+	; So this will position our gui at (GDIP_posX,GDIP_posY) with the Width and Height specified earlier
+	UpdateLayeredWindow(GDIP_hwnd, GDIP_DeviceContextHandle, GDIP_posX, GDIP_posY, GDIP_width, GDIP_height)
+
+	; Select the object back into the GDIP_DeviceContextHandle
+	SelectObject(GDIP_DeviceContextHandle, GDIP_BitmapObject)
+
+	; Now the bitmap may be deleted
+	DeleteObject(GDIP_BitmapHandle)
+
+	; Also the device context related to the bitmap may be deleted
+	DeleteDC(GDIP_DeviceContextHandle)
+
+	; The graphics may now be deleted
+	Gdip_DeleteGraphics(GDIP_Graphics)
+	
+	; Indicate that we are drawing
+	GDIP_IsDrawing := false
 }
 
 GDIP_Clean() {
